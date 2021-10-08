@@ -59,7 +59,7 @@ the newest features and options.
 
 /* --------------------------- Functional Range ---------------------------- */
 
-#define USB_CFG_HAVE_INTRIN_ENDPOINT    0
+#define USB_CFG_HAVE_INTRIN_ENDPOINT    1
 /* Define this to 1 if you want to compile a version with two endpoints: The
  * default control endpoint 0 and an interrupt-in endpoint 1.
  */
@@ -124,7 +124,7 @@ the newest features and options.
  * you use obdev's free shared VID/PID pair. Be sure to read the rules in
  * USBID-License.txt!
  */
-#define USB_CFG_DEVICE_VERSION  0x03, 0x01
+#define USB_CFG_DEVICE_VERSION  0x42, 0x01
 /* Version number of the device: Minor number first, then major number.
  */
 #define	USB_CFG_VENDOR_NAME     'w', 'w', 'w', '.', 'f', 'i', 's', 'c', 'h', 'l', '.', 'd', 'e'
@@ -151,17 +151,17 @@ the newest features and options.
  * to fine tune control over USB descriptors such as the string descriptor
  * for the serial number.
  */
-#define USB_CFG_DEVICE_CLASS    0xff
+#define USB_CFG_DEVICE_CLASS    0
 #define USB_CFG_DEVICE_SUBCLASS 0
 /* See USB specification if you want to conform to an existing device class.
  */
-#define USB_CFG_INTERFACE_CLASS     0
+#define USB_CFG_INTERFACE_CLASS     0x03
 #define USB_CFG_INTERFACE_SUBCLASS  0
 #define USB_CFG_INTERFACE_PROTOCOL  0
 /* See USB specification if you want to conform to an existing device class or
  * protocol.
  */
-#define USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH    0   /* total length of report descriptor */
+#define USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH    35   /* total length of report descriptor */
 /* Define this to the length of the HID report descriptor, if you implement
  * an HID device. Otherwise don't define it or define it to 0.
  */
