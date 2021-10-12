@@ -49,7 +49,7 @@ cpp:
 	$(COMPILE) -E main.c
 
 avrdude:
-	avrdude -c butterfly -p $(TARGET) -U flash:w:main.hex
+	avrdude -c avr910 -p $(TARGET) -U flash:w:main.hex
 
 fuses:
 	avrdude -c avr910 -p m8 -u -U hfuse:w:0xc9:m -U lfuse:w:0x9f:m

@@ -1,5 +1,12 @@
+usbasp.2006-09-16
+-----------------
+- add usb reset on startup
+- included new AVRUSB driver version (Release 2006-07-18)
+- changed VID and PID to OBDEV's shared IDs to meet new licence conditions
+- removed avrdude patch from this package. USBasp is supported in latest avrdude CVS version 
+
 usbasp.2005-11-14
-----------------------
+-----------------
 - fixed blocksize restriction (programming the Mega128 now works) 
   by Thomas Pfeifer (TP)
 - update patch for avrdude-5.0

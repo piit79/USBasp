@@ -47,9 +47,7 @@ Start Windows and connect USBasp to the system. When Windows asks for a
 driver, choose "bin/win-driver". On Win2k and WinXP systems, Windows will
 warn that the driver is is not 'digitally signed'. Ignore this message and
 continue with the installation.
-Now you can run the precompiled version of avrdude: change in command line
-mode to "bin/win-avrdude" and start the program. Consult the documentation
-of avrdude for details. Examples:
+Now you can run avrdude. Examples:
 1. Enter terminal mode with an AT90S2313 connected to the programmer:
    avrdude -c usbasp -p at90s2313 -t
 2. Write main.hex to the flash of an ATmega8:
@@ -81,20 +79,16 @@ You have to change the fuse bits for external crystal, e.g. high byte = 0xc9
 and low byte = 0x9f.
 
 Software (avrdude):
-An extension to avrdude (http://www.nongnu.org/avrdude/) was written.
-To compile the software:
+The latest avrdude CVS version supports USBasp.
 1. install libusb: http://libusb.sourceforge.net/
-2. get avrdude-5.0.tar.gz and extract it:
-   tar xvzf avrdude-5.0.tar.gz
-3. cp usbasp/software/usbasp.* avrdude-5.0/
-4. cd avrdude-5.0
-5. apply the patch:
-   patch -p1 < ../usbasp/software/avrdude_usbasp.xxxx-xx-xx.patch
-6. configure to your environment:
+2. get avrdude CVS version:
+   cvs -z3 -d:pserver:anonymous@cvs.savannah.nongnu.org:/sources/avrdude co avrdude
+4. cd avrdude
+5. configure to your environment:
    ./bootstrap (I had to comment out the two if-blocks which verify the
                 installed versions of autoconf and automake)
    ./configure
-7. compile and install it:
+6. compile and install it:
    make
    make install
 
@@ -119,11 +113,9 @@ Readme.txt ...................... The file you are currently reading
 firmware ........................ Source code of the controller firmware
 firmware/usbdrv ................. AVR USB driver by Objective Development
 firmware/usbdrv/License.txt ..... Public license for AVR USB driver and USBasp
-software ........................ Source code of the host software
 circuit ......................... Circuit diagram in PDF
 bin ............................. Precompiled programs
 bin/win-driver .................. Windows driver
-bin/win-avrdude ................. avrdude compiled for Windows
 
 
 MORE INFORMATION
@@ -139,5 +131,5 @@ libusb .......................... http://libusb.sourceforge.net/
 libusb-win32 .................... http://libusb-win32.sourceforge.net/
 
 
-2005-11-14 Thomas Fischl <tfischl@gmx.de>
+2006-09-16 Thomas Fischl <tfischl@gmx.de>
 http://www.fischl.de

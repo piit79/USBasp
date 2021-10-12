@@ -84,7 +84,7 @@ ServiceBinary  = %12%\libusb0.sys
 ;--------------------------------------------------------------------------
 
 [Devices]
-"USBasp"=LIBUSB_DEV, USB\VID_03eb&PID_c7b4
+"USBasp"=LIBUSB_DEV, USB\VID_16c0&PID_05dc
 
 [Strings]
 manufacturer = "www.fischl.de"

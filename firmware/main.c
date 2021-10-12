@@ -214,9 +214,18 @@ uchar usbFunctionWrite(uchar *data, uchar len) {
 
 int main(void)
 {
+  uchar   i, j;
+
   PORTD = 0;
   PORTB = 0;		/* no pullups on USB and ISP pins */
   DDRD = ~(1 << 2);	/* all outputs except PD2 = INT0 */
+
+  DDRB = ~0;            /* output SE0 for USB reset */
+  j = 0;
+  while(--j){           /* USB Reset by device only required on Watchdog Reset */
+      i = 0;
+      while(--i);       /* delay >10ms for USB reset */
+  }
   DDRB = 0;             /* all USB and ISP pins inputs */
 
   DDRC = 0x03;          /* all inputs except PC0, PC1 */
