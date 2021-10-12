@@ -29,7 +29,7 @@ all:	main.hex
 	$(COMPILE) -S $< -o $@
 
 clean:
-	rm -f main.hex main.lst main.obj main.cof main.list main.map main.eep.hex main.bin *.o main.s usbdrv.s
+	rm -f main.hex main.lst main.obj main.cof main.list main.map main.eep.hex main.bin *.o main.s usbdrv/*.o
 
 # file targets:
 main.bin:	$(OBJECTS)
@@ -50,6 +50,27 @@ cpp:
 
 avrdude:
 	avrdude -c butterfly -p $(TARGET) -U flash:w:main.hex
+
+fuses:
+	avrdude -c avr910 -p m8 -u -U hfuse:w:0xc9:m -U lfuse:w:0x9f:m
+
+# Fuse high byte:
+# 0xc9 = 1 1 0 0   1 0 0 1 <-- BOOTRST (boot reset vector at 0x0000)
+#        ^ ^ ^ ^   ^ ^ ^------ BOOTSZ0
+#        | | | |   | +-------- BOOTSZ1
+#        | | | |   + --------- EESAVE (don't preserve EEPROM over chip erase)
+#        | | | +-------------- CKOPT (full output swing)
+#        | | +---------------- SPIEN (allow serial programming)
+#        | +------------------ WDTON (WDT not always on)
+#        +-------------------- RSTDISBL (reset pin is enabled)
+# Fuse low byte:
+# 0x9f = 1 0 0 1   1 1 1 1
+#        ^ ^ \ /   \--+--/
+#        | |  |       +------- CKSEL 3..0 (external >8M crystal)
+#        | |  +--------------- SUT 1..0 (crystal osc, BOD enabled)
+#        | +------------------ BODEN (BrownOut Detector enabled)
+#        +-------------------- BODLEVEL (2.7V)	
+
 
 uisp:	all
 	$(UISP) --erase

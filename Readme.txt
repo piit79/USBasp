@@ -39,6 +39,8 @@ Firmware:
 Flash "bin/firmware/usbasp.xxxx-xx-xx.hex" to the ATMega8 with a working
 programmer (e.g. with avrdude, uisp, ...). Set jumper J2 to activate
 USBasp firmware update function.
+You have to change the fuse bits for external crystal, e.g. high byte = 0xc9
+and low byte = 0x9f.
 
 Windows:
 Start Windows and connect USBasp to the system. When Windows asks for a
@@ -75,6 +77,8 @@ To compile the firmware
 4. flash "main.hex" to the ATMega8. E.g. with uisp or avrdude (check
 the Makefile option "make avrdude"). To flash the firmware you have
 to set jumper J2 and connect USBasp to a working programmer.
+You have to change the fuse bits for external crystal, e.g. high byte = 0xc9
+and low byte = 0x9f.
 
 Software (avrdude):
 An extension to avrdude (http://www.nongnu.org/avrdude/) was written.
@@ -136,5 +140,5 @@ libusb .......................... http://libusb.sourceforge.net/
 libusb-win32 .................... http://libusb-win32.sourceforge.net/
 
 
-2005-04-21 Thomas Fischl <tfischl@gmx.de>
+2005-07-03 Thomas Fischl <tfischl@gmx.de>
 http://www.fischl.de

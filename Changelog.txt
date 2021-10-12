@@ -1,0 +1,10 @@
+usbasp.2005-07-03
+-----------------
+- set USB_CFG_SAMPLE_EXACT in usbconfig.h to reduce problems with long cables
+- corrected vendor string
+- added notes on setting fuse bits
+
+
+usbasp.2005-04-21
+-----------------
+- first public version

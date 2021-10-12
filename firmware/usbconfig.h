@@ -54,7 +54,7 @@ must be adapted to your hardware.
  * The value is in milliamperes. [It will be divided by two since USB
  * communicates power requirements in units of 2 mA.]
  */
-#define	USB_CFG_SAMPLE_EXACT			0
+#define	USB_CFG_SAMPLE_EXACT			1
 /* This variable affects Sampling Jitter for USB receiving. When it is 0, the
  * driver guarantees a sampling window of 1/2 bit. The USB spec requires
  * that the receiver has at most 1/4 bit sampling window. The 1/2 bit window
@@ -90,7 +90,7 @@ must be adapted to your hardware.
 #define	USB_CFG_DEVICE_VERSION	0x00, 0x01
 /* Version number of the device: Minor number first, then major number.
  */
-#define	USB_CFG_VENDOR_NAME		'w', 'w', 'w', '.', 'f', 'i', 's', 'c', 'h', 'l', '.', 'a', 't'
+#define	USB_CFG_VENDOR_NAME		'w', 'w', 'w', '.', 'f', 'i', 's', 'c', 'h', 'l', '.', 'd', 'e'
 #define	USB_CFG_VENDOR_NAME_LEN	13
 /* These two values define the vendor name returned by the USB device. The name
  * must be given as a list of characters under single quotes. The characters
