@@ -84,13 +84,12 @@ Software (avrdude):
 An extension to avrdude (http://www.nongnu.org/avrdude/) was written.
 To compile the software:
 1. install libusb: http://libusb.sourceforge.net/
-2. get the csv version of avrdude:
-   export CVS_RSH="ssh"
-   cvs -z3 -d:ext:anoncvs@savannah.nongnu.org:/cvsroot/avrdude co avrdude
-3. cp usbasp/software/usbasp.* avrdude/
-4. cd avrdude
+2. get avrdude-5.0.tar.gz and extract it:
+   tar xvzf avrdude-5.0.tar.gz
+3. cp usbasp/software/usbasp.* avrdude-5.0/
+4. cd avrdude-5.0
 5. apply the patch:
-   patch < ../usbasp/software/avrdude_usbasp.xxxx-xx-xx.patch
+   patch -p1 < ../usbasp/software/avrdude_usbasp.xxxx-xx-xx.patch
 6. configure to your environment:
    ./bootstrap (I had to comment out the two if-blocks which verify the
                 installed versions of autoconf and automake)
@@ -140,5 +139,5 @@ libusb .......................... http://libusb.sourceforge.net/
 libusb-win32 .................... http://libusb-win32.sourceforge.net/
 
 
-2005-07-03 Thomas Fischl <tfischl@gmx.de>
+2005-11-14 Thomas Fischl <tfischl@gmx.de>
 http://www.fischl.de

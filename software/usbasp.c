@@ -33,7 +33,7 @@ static int usbasp_transmit(unsigned char receive, unsigned char functionid,
 			   (send[3] << 8) | send[2],
 			   buffer, buffersize,
 			   5000);
-  if(nbytes < 0){	      
+  if(nbytes < 0){
     fprintf(stderr, "%s: error: usbasp_transmit: %s\n", progname, usb_strerror());
     exit(1);
   }
@@ -44,7 +44,7 @@ static int usbasp_transmit(unsigned char receive, unsigned char functionid,
 static int usbasp_open(PROGRAMMER * pgm, char * port)
 {
   struct usb_bus	*bus;
-  struct usb_device *dev = 0;  
+  struct usb_device *dev = 0;
 
   usb_init();
   usb_find_busses();
@@ -58,14 +58,14 @@ static int usbasp_open(PROGRAMMER * pgm, char * port)
       break;
   }
   if(!dev){
-    fprintf(stderr, "%s: error: could not find USB device vendor=0x%x product=0x%x\n", 
+    fprintf(stderr, "%s: error: could not find USB device vendor=0x%x product=0x%x\n",
 	    progname, USBDEV_VENDOR, USBDEV_PRODUCT);
     exit(1);
   }
 
   usbhandle = usb_open(dev);
   if(!usbhandle){
-    fprintf(stderr, "%s: error: opening usb device: %s\n", 
+    fprintf(stderr, "%s: error: opening usb device: %s\n",
 	    progname, usb_strerror());
     exit(1);
   }
@@ -117,14 +117,14 @@ static void usbasp_display(PROGRAMMER * pgm, char * p)
 }
 
 
-static int usbasp_cmd(PROGRAMMER * pgm, unsigned char cmd[4], 
+static int usbasp_cmd(PROGRAMMER * pgm, unsigned char cmd[4],
                    unsigned char res[4])
 {
   int nbytes =
     usbasp_transmit(1, USBASP_FUNC_TRANSMIT, cmd, res, sizeof(res));
 
   if(nbytes != 4){
-    fprintf(stderr, "%s: error: wrong responds size\n", 
+    fprintf(stderr, "%s: error: wrong responds size\n",
 	    progname);
     return -1;
   }
@@ -141,12 +141,12 @@ static int usbasp_program_enable(PROGRAMMER * pgm, AVRPART * p)
   memset(res, 0, sizeof(res));
 
   cmd[0] = 0;
-  
+
   int nbytes =
     usbasp_transmit(1, USBASP_FUNC_ENABLEPROG, cmd, res, sizeof(res));
 
   if ((nbytes != 1) | (res[0] != 0)) {
-    fprintf(stderr, "%s: error: programm enable: target doesn't answer. %x \n", 
+    fprintf(stderr, "%s: error: programm enable: target doesn't answer. %x \n",
 	    progname, res[0]);
     return -1;
   }
@@ -177,7 +177,7 @@ static int usbasp_chip_erase(PROGRAMMER * pgm, AVRPART * p)
 }
 
 
-static int usbasp_paged_load(PROGRAMMER * pgm, AVRPART * p, AVRMEM * m, 
+static int usbasp_paged_load(PROGRAMMER * pgm, AVRPART * p, AVRMEM * m,
                              int page_size, int n_bytes)
 {
   int n;
@@ -204,16 +204,16 @@ static int usbasp_paged_load(PROGRAMMER * pgm, AVRPART * p, AVRMEM * m,
       blocksize = wbytes;
       wbytes = 0;
     }
-  
+
     cmd[0] = address & 0xFF;
     cmd[1] = address >> 8;
 
     n = usbasp_transmit(1, function, cmd, buffer, blocksize);
 
     if (n != blocksize) {
-      fprintf(stderr, "%s: error: wrong reading bytes %x\n", 
+      fprintf(stderr, "%s: error: wrong reading bytes %x\n",
 	      progname, n);
-      exit(1); 
+      exit(1);
     }
 
     buffer += blocksize;
@@ -258,15 +258,15 @@ static int usbasp_paged_write(PROGRAMMER * pgm, AVRPART * p, AVRMEM * m,
     cmd[0] = address & 0xFF;
     cmd[1] = address >> 8;
     cmd[2] = page_size & 0xFF;
-    cmd[3] = blockflags;
+    cmd[3] = (blockflags & 0x0F) + ((page_size & 0xF00) >> 4); //TP: Mega128 fix
     blockflags = 0;
-  
+
     n = usbasp_transmit(0, function, cmd, buffer, blocksize);
 
     if (n != blocksize) {
-      fprintf(stderr, "%s: error: wrong count at writing %x\n", 
+      fprintf(stderr, "%s: error: wrong count at writing %x\n",
 	      progname, n);
-      exit(1); 
+      exit(1);
     }
 
 
@@ -296,7 +296,7 @@ void usbasp_initpgm(PROGRAMMER * pgm)
   pgm->cmd            = usbasp_cmd;
   pgm->open           = usbasp_open;
   pgm->close          = usbasp_close;
-  
+
   /*
    * optional functions
    */
@@ -313,7 +313,7 @@ extern char * progname;
 
 static int usbasp_nousb_open (struct programmer_t *pgm, char * name)
 {
-  fprintf(stderr, "%s: error: no usb support. please compile again with libusb installed.\n", 
+  fprintf(stderr, "%s: error: no usb support. please compile again with libusb installed.\n",
 	  progname);
 
   exit(1);

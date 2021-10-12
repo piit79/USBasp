@@ -1,9 +1,14 @@
+usbasp.2005-11-14
+----------------------
+- fixed blocksize restriction (programming the Mega128 now works) 
+  by Thomas Pfeifer (TP)
+- update patch for avrdude-5.0
+
 usbasp.2005-07-03
 -----------------
 - set USB_CFG_SAMPLE_EXACT in usbconfig.h to reduce problems with long cables
 - corrected vendor string
 - added notes on setting fuse bits
-
 
 usbasp.2005-04-21
 -----------------

@@ -1,0 +1,100 @@
+diff -Naur avrdude-5.0/Makefile.am avrdude-5.0-usbasp/Makefile.am
+--- avrdude-5.0/Makefile.am	Sun Sep 18 22:12:23 2005
++++ avrdude-5.0-usbasp/Makefile.am	Mon Nov 14 20:57:20 2005
+@@ -98,6 +98,8 @@
+ 	stk500v2.c \
+ 	stk500v2.h \
+ 	stk500v2_private.h \
++	usbasp.c \
++	usbasp.h \
+ 	term.c \
+ 	term.h \
+ 	usb_libusb.c
+diff -Naur avrdude-5.0/avrdude.conf.in avrdude-5.0-usbasp/avrdude.conf.in
+--- avrdude-5.0/avrdude.conf.in	Sun Sep 18 02:44:20 2005
++++ avrdude-5.0-usbasp/avrdude.conf.in	Mon Nov 14 20:57:33 2005
+@@ -262,6 +262,12 @@
+ ;
+ 
+ programmer
++  id    = "usbasp";
++  desc  = "usbasp";
++  type  = usbasp;
++;
++
++programmer
+   id    = "butterfly";
+   desc  = "Atmel Butterfly Development Board";
+   type  = butterfly;
+diff -Naur avrdude-5.0/config_gram.y avrdude-5.0-usbasp/config_gram.y
+--- avrdude-5.0/config_gram.y	Sun Sep 18 22:12:23 2005
++++ avrdude-5.0-usbasp/config_gram.y	Mon Nov 14 20:57:50 2005
+@@ -37,6 +37,7 @@
+ #include "stk500v2.h"
+ #include "avr910.h"
+ #include "butterfly.h"
++#include "usbasp.h"
+ #include "avr.h"
+ #include "jtagmkII.h"
+ 
+@@ -118,6 +119,7 @@
+ %token K_STK500
+ %token K_STK500V2
+ %token K_AVR910
++%token K_USBASP
+ %token K_BUTTERFLY
+ %token K_TYPE
+ %token K_VCC
+@@ -349,6 +351,12 @@
+   K_TYPE TKN_EQUAL K_AVR910 {
+     { 
+       avr910_initpgm(current_prog);
++    }
++  } |
++
++  K_TYPE TKN_EQUAL K_USBASP {
++    {
++      usbasp_initpgm(current_prog);
+     }
+   } |
+ 
+diff -Naur avrdude-5.0/configure.ac avrdude-5.0-usbasp/configure.ac
+--- avrdude-5.0/configure.ac	Wed Sep 21 03:37:02 2005
++++ avrdude-5.0-usbasp/configure.ac	Mon Nov 14 20:58:07 2005
+@@ -46,7 +46,24 @@
+ AC_CHECK_LIB([readline], [readline])
+ # usb_get_string_simple is only available in recent enough
+ # versions of libusb, so use that as a decision base.
+-AC_CHECK_LIB([usb], [usb_get_string_simple])
++#AC_CHECK_LIB([usb], [usb_get_string_simple])
++
++AH_TEMPLATE([HAVE_LIBUSB],
++	            [Define if USB support is enabled via libusb])
++AC_CHECK_LIB(usb, main, have_libusb=yes)
++if test x$have_libusb = xyes; then
++   case $target in
++       *-*-darwin*)
++               LIBS="$LIBS -lusb -framework CoreFoundation -framework IOKit"
++               ;;
++       *)
++               LIBS="$LIBS -lusb"
++;;
++   esac
++   AC_DEFINE([HAVE_LIBUSB])
++fi
++
++
+ 
+ # Checks for header files.
+ AC_HEADER_STDC
+diff -Naur avrdude-5.0/lexer.l avrdude-5.0-usbasp/lexer.l
+--- avrdude-5.0/lexer.l	Sun Sep 18 22:12:23 2005
++++ avrdude-5.0-usbasp/lexer.l	Mon Nov 14 20:58:24 2005
+@@ -118,6 +118,7 @@
+ allowfullpagebitstream { yylval=NULL; return K_ALLOWFULLPAGEBITSTREAM; }
+ avr910           { yylval=NULL; return K_AVR910; }
+ avr910_devcode   { yylval=NULL; return K_AVR910_DEVCODE; }
++usbasp           { yylval=NULL; return K_USBASP; }
+ bank_size        { yylval=NULL; return K_PAGE_SIZE; }
+ banked           { yylval=NULL; return K_PAGED; }
+ baudrate         { yylval=NULL; return K_BAUDRATE; }

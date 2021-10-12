@@ -1,16 +1,16 @@
 /*
   USBasp - USB in-circuit programmer for Atmel AVR controllers
 
-  Thomas Fischl <tfischl@gmx.de> 
+  Thomas Fischl <tfischl@gmx.de>
 
   License:
   The project is built with AVR USB driver by Objective Development, which is
   published under an own licence based on the GNU General Public License (GPL).
   USBasp is also distributed under this enhanced licence. See Documentation.
 
-  Target.........: ATMega8 at 12 MHz 
+  Target.........: ATMega8 at 12 MHz
   Creation Date..: 2005-02-20
-  Last change....: 2005-04-20
+  Last change....: 2005-10-08
 
   PC2 SCK speed option. GND  -> slow (8khz SCK),
                         open -> fast (375kHz SCK)
@@ -55,7 +55,7 @@ static uchar prog_state = PROG_STATE_IDLE;
 
 static unsigned int prog_address;
 static unsigned int prog_nbytes = 0;
-static uchar prog_pagesize;
+static unsigned int prog_pagesize; //TP: Mega128 fix
 static uchar prog_blockflags;
 static uchar prog_pagecounter;
 
@@ -75,7 +75,7 @@ uchar usbFunctionSetup(uchar data[8]) {
 
     ispConnect();
     ledRedOn();
-    
+
   } else if (data[1] == USBASP_FUNC_DISCONNECT) {
     ispDisconnect();
     ledRedOff();
@@ -101,12 +101,13 @@ uchar usbFunctionSetup(uchar data[8]) {
 
   } else if (data[1] == USBASP_FUNC_ENABLEPROG) {
     replyBuffer[0] = ispEnterProgrammingMode();;
-    len = 1; 
+    len = 1;
 
   } else if (data[1] == USBASP_FUNC_WRITEFLASH) {
     prog_address = (data[3] << 8) | data[2];
     prog_pagesize = data[4];
-    prog_blockflags = data[5];
+    prog_blockflags = data[5] & 0x0F;
+    prog_pagesize += (((unsigned int)data[5] & 0xF0)<<4); //TP: Mega128 fix
     if (prog_blockflags & PROG_BLOCKFLAG_FIRST) {
       prog_pagecounter = prog_pagesize;
     }
@@ -123,8 +124,8 @@ uchar usbFunctionSetup(uchar data[8]) {
     len = 0xff; /* multiple out */
   }
 
-  usbMsgPtr = replyBuffer;   
-  
+  usbMsgPtr = replyBuffer;
+
   return len;
 }
 
@@ -167,7 +168,7 @@ uchar usbFunctionWrite(uchar *data, uchar len) {
       (prog_state != PROG_STATE_WRITEEEPROM)) {
     return 0xff;
   }
-  
+
 
   for (i = 0; i < len; i++) {
 
@@ -184,19 +185,19 @@ uchar usbFunctionWrite(uchar *data, uchar len) {
 	if (prog_pagecounter == 0) {
 	  ispFlushPage(prog_address, data[i]);
 	  prog_pagecounter = prog_pagesize;
-	}      
+	}
       }
 
     } else {
       /* EEPROM */
       ispWriteEEPROM(prog_address, data[i]);
     }
-    
+
     prog_nbytes --;
 
     if (prog_nbytes == 0) {
       prog_state = PROG_STATE_IDLE;
-      if ((prog_blockflags & PROG_BLOCKFLAG_LAST) && 
+      if ((prog_blockflags & PROG_BLOCKFLAG_LAST) &&
 	  (prog_pagecounter != prog_pagesize)) {
 
 	/* last block and page flush pending, so flush it now */
@@ -217,14 +218,14 @@ int main(void)
   PORTB = 0;		/* no pullups on USB and ISP pins */
   DDRD = ~(1 << 2);	/* all outputs except PD2 = INT0 */
   DDRB = 0;             /* all USB and ISP pins inputs */
-  
+
   DDRC = 0x03;          /* all inputs except PC0, PC1 */
   PORTC = 0xfe;
 
   clockInit();          /* init timer */
 
   ispSetSCKOption(ISP_SCK_FAST);
-  
+
   usbInit();
   sei();
   for(;;){	        /* main event loop */
