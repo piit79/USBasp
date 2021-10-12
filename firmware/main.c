@@ -10,14 +10,13 @@
 
   Target.........: ATMega8 at 12 MHz
   Creation Date..: 2005-02-20
-  Last change....: 2005-10-08
+  Last change....: 2006-12-29
 
   PC2 SCK speed option. GND  -> slow (8khz SCK),
                         open -> fast (375kHz SCK)
 */
 
 #include <avr/io.h>
-#include <avr/signal.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <avr/wdt.h>
@@ -161,6 +160,7 @@ uchar usbFunctionRead(uchar *data, uchar len) {
 
 uchar usbFunctionWrite(uchar *data, uchar len) {
 
+  uchar retVal = 0;
   uchar i;
 
   /* check if programmer is in correct write state */
@@ -203,12 +203,14 @@ uchar usbFunctionWrite(uchar *data, uchar len) {
 	/* last block and page flush pending, so flush it now */
 	ispFlushPage(prog_address, data[i]);
       }
+	  
+	  retVal = 1; // Need to return 1 when no more data is to be received
     }
 
     prog_address ++;
   }
 
-  return 0;
+  return retVal;
 }
 
 

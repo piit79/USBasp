@@ -1,8 +1,9 @@
 This is the README file for USBasp.
 
 USBasp is a USB in-circuit programmer for Atmel AVR controllers. It simply
-consists of an ATMega8 and a couple of passive components. The programmer
-uses a firmware-only USB driver, no special USB controller is needed.
+consists of an ATMega48 or an ATMega8 and a couple of passive components.
+The programmer uses a firmware-only USB driver, no special USB controller
+is needed.
 
 Features:
 - Works under multiple platforms. Linux, Mac OS X and Windows are tested.
@@ -23,10 +24,8 @@ file "firmware/usbdrv/License.txt" for details.
 LIMITATIONS
 
 Hardware:
-"circuit/usbasp_5V_circuit.pdf" shows a simple circuit. It doesn't meet the
-voltage range on the data lines specified in USB 1.1. Also this circuit can
-only be used for programming 5V target systems. For other systems a level
-converter is needed.
+This package includes a circuit diagram. That circuit can only be used for
+programming 5V target systems. For other systems a level converter is needed.
 
 Firmware:
 The firmware dosn't support USB Suspend Mode. A bidirectional serial
@@ -36,11 +35,13 @@ interface to slave exists in hardware but the firmware doesn't support it yet.
 USE PRECOMPILED VERSION
 
 Firmware:
-Flash "bin/firmware/usbasp.xxxx-xx-xx.hex" to the ATMega8 with a working
-programmer (e.g. with avrdude, uisp, ...). Set jumper J2 to activate
+Flash "bin/firmware/usbasp.atmega48.xxxx-xx-xx.hex" or
+"bin/firmware/usbasp.atmega8.xxxx-xx-xx.hex" to the used controller with a
+working programmer (e.g. with avrdude, uisp, ...). Set jumper J2 to activate
 USBasp firmware update function.
-You have to change the fuse bits for external crystal, e.g. high byte = 0xc9
-and low byte = 0x9f.
+You have to change the fuse bits for external crystal (see "make fuses").
+# TARGET=atmega8    HFUSE=0xc9  LFUSE=0xef
+# TARGET=atmega48   HFUSE=0xdd  LFUSE=0xff
 
 Windows:
 Start Windows and connect USBasp to the system. When Windows asks for a
@@ -58,7 +59,7 @@ J1 Power target
    Supply target with 5V (USB voltage). Be careful with this option, the
    circuit isn't protected against short circuit!
 J2 Jumper for firmware upgrade (not self-upgradable)
-   Set this jumper for flashing the ATMega8 of USBasp with another working
+   Set this jumper for flashing the ATMega(4)8 of USBasp with another working
    programmer.
 J3 SCK option
    If the target clock is lower than 1,5 MHz, you have to set this jumper.
@@ -71,25 +72,24 @@ Firmware:
 To compile the firmware
 1. install the GNU toolchain for AVR microcontrollers (avr-gcc, avr-libc),
 2. change directory to firmware/
-3. run "make"
-4. flash "main.hex" to the ATMega8. E.g. with uisp or avrdude (check
-the Makefile option "make avrdude"). To flash the firmware you have
+3. run "make main.hex"
+4. flash "main.hex" to the ATMega(4)8. E.g. with uisp or avrdude (check
+the Makefile option "make flash"). To flash the firmware you have
 to set jumper J2 and connect USBasp to a working programmer.
-You have to change the fuse bits for external crystal, e.g. high byte = 0xc9
-and low byte = 0x9f.
+You have to change the fuse bits for external crystal, (check the Makefile
+option "make fuses").
 
 Software (avrdude):
-The latest avrdude CVS version supports USBasp.
+AVRDUDE supports USBasp since version 5.2. 
 1. install libusb: http://libusb.sourceforge.net/
-2. get avrdude CVS version:
-   cvs -z3 -d:pserver:anonymous@cvs.savannah.nongnu.org:/sources/avrdude co avrdude
-4. cd avrdude
+2. get latest avrdude release: http://download.savannah.gnu.org/releases/avrdude/
+3. cd avrdude-X.X.X
 5. configure to your environment:
    ./bootstrap (I had to comment out the two if-blocks which verify the
                 installed versions of autoconf and automake)
    ./configure
 6. compile and install it:
-   make
+   make 
    make install
 
 Notes on Windows (Cygwin):
@@ -113,9 +113,10 @@ Readme.txt ...................... The file you are currently reading
 firmware ........................ Source code of the controller firmware
 firmware/usbdrv ................. AVR USB driver by Objective Development
 firmware/usbdrv/License.txt ..... Public license for AVR USB driver and USBasp
-circuit ......................... Circuit diagram in PDF
+circuit ......................... Circuit diagram in PDF and EAGLE format
 bin ............................. Precompiled programs
 bin/win-driver .................. Windows driver
+bin/firmware .................... Precompiled firmware
 
 
 MORE INFORMATION
@@ -131,5 +132,5 @@ libusb .......................... http://libusb.sourceforge.net/
 libusb-win32 .................... http://libusb-win32.sourceforge.net/
 
 
-2006-09-16 Thomas Fischl <tfischl@gmx.de>
+2006-12-29 Thomas Fischl <tfischl@gmx.de>
 http://www.fischl.de

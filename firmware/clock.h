@@ -5,7 +5,7 @@
   Description....: Provides functions for timing/waiting
   Licence........: Free under certain conditions. See Documentation.
   Creation Date..: 2005-02-23
-  Last change....: 2005-04-20
+  Last change....: 2006-11-16
 */
 
 #ifndef __clock_h_included__
@@ -15,8 +15,12 @@
 #define TIMERVALUE      TCNT0
 #define CLOCK_T_320us	60
 
+#ifdef __AVR_ATmega8__
+#define TCCR0B  TCCR0
+#endif
+
 /* set prescaler to 64 */
-#define clockInit()  TCCR0 = (1 << CS01) | (1 << CS00);
+#define clockInit()  TCCR0B = (1 << CS01) | (1 << CS00);
 
 /* wait time * 320 us */
 void clockWait(uint8_t time);

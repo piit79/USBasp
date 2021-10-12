@@ -1,3 +1,10 @@
+usbasp.2006-12-29
+-----------------
+- fixed returnvalue in usbWriteFunction (by Jeroen Koeter)
+- changed clock.h: adaptation for newer MCUs like ATMega48 (by Hanns-Konrad Unger)
+- improved Makefile to select target (by Hanns-Konrad Unger)
+- circuit diagram: added zener diodes to USB data lines 
+
 usbasp.2006-09-16
 -----------------
 - add usb reset on startup

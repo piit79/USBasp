@@ -1,18 +1,45 @@
-SERIAL = `echo /dev/tty.USA19QI*`
-UISP = uisp -dprog=avr910 -dserial=$(SERIAL) -dpart=auto
-TARGET = atmega8
-#TARGET = at90s2313
-# The two lines above are for "uisp" and the AVR910 serial programmer connected
-# to a Keyspan USB to serial converter to a Mac running Mac OS X.
-# Choose your favorite programmer and interface.
+#
+#   Makefile for usbasp
+#   20061119   Thomas Fischl        original
+#   20061120   Hanns-Konrad Unger   help: and TARGET=atmega48 added
+#
+
+# TARGET=atmega8    HFUSE=0xc9  LFUSE=0xef
+# TARGET=atmega48   HFUSE=0xdd  LFUSE=0xff
+# TARGET=at90s2313
+TARGET=atmega8
+HFUSE=0xc9
+LFUSE=0xef
+
+
+# ISP=bsd      PORT=/dev/parport0
+# ISP=ponyser  PORT=/dev/ttyS1
+# ISP=stk500   PORT=/dev/ttyS1
+# ISP=usbasp   PORT=/dev/usb/ttyUSB0
+# ISP=stk500v2 PORT=/dev/ttyUSB0
+ISP=usbasp
+PORT=/dev/usb/ttyUSB0
+
+help:
+	@echo "Usage: make                same as make help"
+	@echo "       make help           same as make"
+	@echo "       make main.hex       create main.hex"
+	@echo "       make clean          remove redundant data"
+	@echo "       make disasm         disasm main"
+	@echo "       make flash          upload main.hex into flash"
+	@echo "       make fuses          program fuses"
+	@echo "       make avrdude        test avrdude"
+	@echo "Current values:"
+	@echo "       TARGET=${TARGET}"
+	@echo "       LFUSE=${LFUSE}"
+	@echo "       HFUSE=${HFUSE}"
+	@echo "       CLOCK=12000000"
+	@echo "       ISP=${ISP}"
+	@echo "       PORT=${PORT}"
 
 COMPILE = avr-gcc -Wall -O2 -Iusbdrv -I. -mmcu=$(TARGET) # -DDEBUG_LEVEL=2
 
 OBJECTS = usbdrv/usbdrv.o usbdrv/usbdrvasm.o usbdrv/oddebug.o isp.o clock.o main.o
-
-
-# symbolic targets:
-all:	main.hex
 
 .c.o:
 	$(COMPILE) -c $< -o $@
@@ -48,13 +75,16 @@ disasm:	main.bin
 cpp:
 	$(COMPILE) -E main.c
 
-avrdude:
-	avrdude -c avr910 -p $(TARGET) -U flash:w:main.hex
+flash:
+	avrdude -c ${ISP} -p ${TARGET} -P ${PORT} -U flash:w:main.hex
 
 fuses:
-	avrdude -c avr910 -p m8 -u -U hfuse:w:0xc9:m -U lfuse:w:0x9f:m
+	avrdude -c ${ISP} -p ${TARGET} -P ${PORT} -u -U hfuse:w:$(HFUSE):m -U lfuse:w:$(LFUSE):m
 
-# Fuse high byte:
+avrdude:
+	avrdude -c ${ISP} -p ${TARGET} -P ${PORT} -v
+
+# Fuse atmega8 high byte HFUSE:
 # 0xc9 = 1 1 0 0   1 0 0 1 <-- BOOTRST (boot reset vector at 0x0000)
 #        ^ ^ ^ ^   ^ ^ ^------ BOOTSZ0
 #        | | | |   | +-------- BOOTSZ1
@@ -63,15 +93,43 @@ fuses:
 #        | | +---------------- SPIEN (allow serial programming)
 #        | +------------------ WDTON (WDT not always on)
 #        +-------------------- RSTDISBL (reset pin is enabled)
-# Fuse low byte:
+# Fuse atmega8 low byte LFUSE:
 # 0x9f = 1 0 0 1   1 1 1 1
 #        ^ ^ \ /   \--+--/
 #        | |  |       +------- CKSEL 3..0 (external >8M crystal)
 #        | |  +--------------- SUT 1..0 (crystal osc, BOD enabled)
 #        | +------------------ BODEN (BrownOut Detector enabled)
-#        +-------------------- BODLEVEL (2.7V)	
+#        +-------------------- BODLEVEL (2.7V)
+#
+# Fuse atmega48 high byte hfuse:
+# 0xdf = 1 1 0 1   1 1 1 1     factory setting
+#        ^ ^ ^ ^   ^ \-+-/
+#        | | | |   |   +------ BODLEVEL (Brown out disabled)
+#        | | | |   + --------- EESAVE (don't preserve EEPROM over chip erase)
+#        | | | +-------------- WDTON (WDT not always on)
+#        | | +---------------- SPIEN (allow serial programming)
+#        | +------------------ DWEN (debug wire is disabled)
+#        +-------------------- RSTDISBL (reset pin is enabled)
+# 0xdd = ext.reset, no DW, SPI, no watchdog, no save eeprom, BOD 2.7V
+# Fuse atmega48 low byte lfuse:
+# 0x62 = 0 1 1 0   0 0 1 0     factory setting
+#        ^ ^ \ /   \--+--/
+#        | |  |       +------- CKSEL 3..0 (internal 8Mhz Oszillator)
+#        | |  +--------------- SUT 1..0 (start-up time)
+#        | +------------------ CKOUT (no clock output)
+#        +-------------------- CKDIV8 (divide clock by 8)
+# 0xdc = divide/1,no clock output,fast raising power,low Pw Oszil. 3..8 Mhz
+# 0xe0 = divide/1,no clock output,fast raising power,external Oszil.
+# 0xff = divide/1,no clock output,slow raising power,low Pw Oszil 8..  Mhz
 
+
+SERIAL = `echo /dev/tty.USA19QI*`
+UISP = uisp -dprog=$S -dserial=$(SERIAL) -dpart=auto
+# The two lines above are for "uisp" and the AVR910 serial programmer connected
+# to a Keyspan USB to serial converter to a Mac running Mac OS X.
+# Choose your favorite programmer and interface.
 
 uisp:	all
 	$(UISP) --erase
 	$(UISP) --upload --verify if=main.hex
+
