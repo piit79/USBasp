@@ -1,0 +1,18 @@
+This file documents changes in the software, firmware and hardware of the
+"Remote Sensor" device. New entries are always appended to the end of the file.
+Scroll down to the bottom to see the most recent changes.
+
+2005-04-01:
+  - Implemented endpoint 1 as interrupt-in endpoint.
+  - Moved all configuration options to usbconfig.h which is not part of the
+    driver.
+  - Changed interface for usbVendorSetup().
+  - Fixed compatibility with ATMega8 device.
+  - Various minor optimizations.
+
+2005-04-11:
+  - Changed interface to application: Use usbFunctionSetup(), usbFunctionRead()
+    and usbFunctionWrite() now. Added configuration options to choose which
+    of these functions to compile in.
+  - Assembler module delivers receive data non-inverted now.
+  - Made register and bit names compatible with more AVR devices.
