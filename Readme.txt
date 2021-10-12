@@ -1,3 +1,8 @@
+This is a modified version of the USBasp firmware for USBaspDualZif programmer
+(https://github.com/piit79/USBaspDualZif).
+
+Original README file follows.
+
 This is the README file for USBasp.
 
 USBasp is a USB in-circuit programmer for Atmel AVR controllers. It simply
