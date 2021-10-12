@@ -73,8 +73,8 @@ uchar usbFunctionSetup(uchar data[8]) {
     /* set compatibility mode of address delivering */
     prog_address_newmode = 0;
 
-    ispConnect();
     ledRedOn();
+    ispConnect();
 
   } else if (data[1] == USBASP_FUNC_DISCONNECT) {
     ispDisconnect();
