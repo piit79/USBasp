@@ -4,9 +4,9 @@
   Autor..........: Thomas Fischl <tfischl@gmx.de> 
   Description....: Provides functions for communication/programming
                    over ISP interface
-  Licence........: Free under certain conditions. See Documentation.
+  Licence........: GNU GPL v2 (see Readme.txt)
   Creation Date..: 2005-02-23
-  Last change....: 2005-04-20
+  Last change....: 2007-07-23
 */
 
 #ifndef __isp_h_included__
@@ -47,12 +47,12 @@ uchar ispEnterProgrammingMode();
 uchar ispReadEEPROM(unsigned int address);
 
 /* write byte to flash at given address */
-uchar ispWriteFlash(unsigned int address, uchar data, uchar pollmode);
+uchar ispWriteFlash(unsigned long address, uchar data, uchar pollmode);
 
-uchar ispFlushPage(unsigned int address, uchar pollvalue);
+uchar ispFlushPage(unsigned long address, uchar pollvalue);
 
 /* read byte from flash at given address */
-uchar ispReadFlash(unsigned int address);
+uchar ispReadFlash(unsigned long address);
 
 /* write byte to eeprom at given address */
 uchar ispWriteEEPROM(unsigned int address, uchar data);

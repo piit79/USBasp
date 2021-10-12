@@ -3,7 +3,7 @@
 
   Autor..........: Thomas Fischl <tfischl@gmx.de> 
   Description....: Provides functions for timing/waiting
-  Licence........: Free under certain conditions. See Documentation.
+  Licence........: GNU GPL v2 (see Readme.txt)
   Creation Date..: 2005-02-23
   Last change....: 2005-04-20
 */

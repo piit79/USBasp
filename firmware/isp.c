@@ -4,9 +4,9 @@
   Autor..........: Thomas Fischl <tfischl@gmx.de> 
   Description....: Provides functions for communication/programming
                    over ISP interface
-  Licence........: Free under certain conditions. See Documentation.
+  Licence........: GNU GPL v2 (see Readme.txt)
   Creation Date..: 2005-02-23
-  Last change....: 2005-04-20
+  Last change....: 2007-07-23
 */
 
 #include <avr/io.h>
@@ -145,7 +145,7 @@ uchar ispEnterProgrammingMode() {
   return 1;  /* error: device dosn't answer */
 }
 
-uchar ispReadFlash(unsigned int address) {
+uchar ispReadFlash(unsigned long address) {
   ispTransmit(0x20 | ((address & 1) << 3));
   ispTransmit(address >> 9);
   ispTransmit(address >> 1);
@@ -153,7 +153,7 @@ uchar ispReadFlash(unsigned int address) {
 }
 
 
-uchar ispWriteFlash(unsigned int address, uchar data, uchar pollmode) {
+uchar ispWriteFlash(unsigned long address, uchar data, uchar pollmode) {
 
   /* 0xFF is value after chip erase, so skip programming 
   if (data == 0xFF) {
@@ -194,7 +194,7 @@ uchar ispWriteFlash(unsigned int address, uchar data, uchar pollmode) {
 }
 
 
-uchar ispFlushPage(unsigned int address, uchar pollvalue) {
+uchar ispFlushPage(unsigned long address, uchar pollvalue) {
   ispTransmit(0x4C);
   ispTransmit(address >> 9);
   ispTransmit(address >> 1);

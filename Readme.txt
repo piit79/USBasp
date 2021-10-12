@@ -15,16 +15,17 @@ Features:
 
 LICENSE
 
-The project is built with AVR USB driver by Objective Development, which is
-published under a proprietary Open Source license. To conform with this
-license, USBasp is distributed under the same license conditions. See the
-file "firmware/usbdrv/License.txt" for details. 
+USBasp is distributed under the terms and conditions of the GNU GPL version
+2 (see "firmware/usbdrv/License.txt" for details).
+
+USBasp is built with AVR USB driver by OBJECTIVE DEVELOPMENT GmbH. See
+"firmware/usbdrv/" for further information.
 
 
 LIMITATIONS
 
 Hardware:
-This package includes a circuit diagram. That circuit can only be used for
+This package includes a circuit diagram. This circuit can only be used for
 programming 5V target systems. For other systems a level converter is needed.
 
 Firmware:
@@ -132,5 +133,5 @@ libusb .......................... http://libusb.sourceforge.net/
 libusb-win32 .................... http://libusb-win32.sourceforge.net/
 
 
-2006-12-29 Thomas Fischl <tfischl@gmx.de>
+2007-07-23 Thomas Fischl <tfischl@gmx.de>
 http://www.fischl.de

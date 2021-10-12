@@ -1,3 +1,9 @@
+usbasp.2007-07-23
+-----------------
+- changed licence to GNU GPL v2
+- included new AVRUSB driver version (Release 2007-07-07); AVRUSB licence was changed to GNU GPL v2
+- fixed long addressing for Mega128 (by BoskiDialer)
+
 usbasp.2006-12-29
 -----------------
 - fixed returnvalue in usbWriteFunction (by Jeroen Koeter)

@@ -4,8 +4,8 @@
  * Creation Date: 2005-04-01
  * Tabsize: 4
  * Copyright: (c) 2005 by OBJECTIVE DEVELOPMENT Software GmbH
- * License: Proprietary, free under certain conditions. See Documentation.
- * This Revision: $Id: usbconfig-prototype.h 216 2006-07-14 21:51:00Z cs $
+ * License: GNU GPL v2 (see License.txt) or proprietary (CommercialLicense.txt)
+ * This Revision: $Id: usbconfig-prototype.h 358 2007-06-23 13:30:30Z cs $
  */
 
 #ifndef __usbconfig_h_included__
@@ -16,8 +16,7 @@ General Description:
 This file is an example configuration (with inline documentation) for the USB
 driver. It configures AVR-USB for an ATMega8 with USB D+ connected to Port D
 bit 2 (which is also hardware interrupt 0) and USB D- to Port D bit 0. You may
-wire the lines to any other port, as long as D- is on bit 0 and D+ is also
-wired to INT0.
+wire the lines to any other port, as long as D+ is also wired to INT0.
 To create your own usbconfig.h file, copy this file to the directory
 containing "usbdrv" (that is your project firmware source directory) and
 rename it to "usbconfig.h". Then edit it accordingly.
@@ -38,6 +37,13 @@ rename it to "usbconfig.h". Then edit it accordingly.
  * This may be any bit in the port. Please note that D+ must also be connected
  * to interrupt pin INT0!
  */
+/* #define USB_CFG_CLOCK_KHZ       (F_CPU/1000) */
+/* Clock rate of the AVR in MHz. Legal values are 12000, 16000 or 16500.
+ * The 16.5 MHz version of the code requires no crystal, it tolerates +/- 1%
+ * deviation from the nominal frequency. All other rates require a precision
+ * of 2000 ppm and thus a crystal!
+ * Default if not specified: 12 MHz
+ */
 
 /* ----------------------- Optional Hardware Config ------------------------ */
 
@@ -51,15 +57,6 @@ rename it to "usbconfig.h". Then edit it accordingly.
 /* This constant defines the bit number in USB_CFG_PULLUP_IOPORT (defined
  * above) where the 1.5k pullup resistor is connected. See description
  * above for details.
- */
-/* #define  USB_BUFFER_SECTION         ".bss" */
-/* The USB receive buffer (variable "usbRxBuf") with a length of 22 bytes
- * MUST NOT cross a 256 byte boundary. We have introduced this configuration
- * option to allow you to change the data segment where this buffer is
- * allocated. If you have problems with the default segment (start of .bss),
- * you may change this setting. See the comment in usbdrv.h for details.
- * On IAR C, the default is the TINY_Z segment (first 256 bytes). You must
- * change this default for devices which don't have RAM below 0x100.
  */
 
 /* --------------------------- Functional Range ---------------------------- */
@@ -92,15 +89,6 @@ rename it to "usbconfig.h". Then edit it accordingly.
 /* Set this variable to the maximum USB bus power consumption of your device.
  * The value is in milliamperes. [It will be divided by two since USB
  * communicates power requirements in units of 2 mA.]
- */
-#define USB_CFG_SAMPLE_EXACT            1
-/* This variable affects Sampling Jitter for USB receiving. When it is 0, the
- * driver guarantees a sampling window of 1/2 bit. The USB spec requires
- * that the receiver has at most 1/4 bit sampling window. The 1/2 bit window
- * should still work reliably enough because we work at low speed. If you want
- * to meet the spec, set this value to 1. This will unroll a loop which
- * results in bigger code size.
- * If you have problems with long cables, try setting this value to 1.
  */
 #define USB_CFG_IMPLEMENT_FN_WRITE      0
 /* Set this to 1 if you want usbFunctionWrite() to be called for control-out
@@ -189,6 +177,11 @@ rename it to "usbconfig.h". Then edit it accordingly.
  * report descriptor length. You must add a PROGMEM character array named
  * "usbHidReportDescriptor" to your code which contains the report descriptor.
  * Don't forget to keep the array and this define in sync!
+ */
+
+/* #define USB_PUBLIC static */
+/* Use the define above if you #include usbdrv.c instead of linking against it.
+ * This technique saves a couple of bytes in flash memory.
  */
 
 /* ------------------- Fine Control over USB Descriptors ------------------- */

@@ -3,14 +3,10 @@
 
   Thomas Fischl <tfischl@gmx.de>
 
-  License:
-  The project is built with AVR USB driver by Objective Development, which is
-  published under an own licence based on the GNU General Public License (GPL).
-  USBasp is also distributed under this enhanced licence. See Documentation.
-
+  License........: GNU GPL v2 (see Readme.txt)
   Target.........: ATMega8 at 12 MHz
   Creation Date..: 2005-02-20
-  Last change....: 2006-12-29
+  Last change....: 2007-07-23
 
   PC2 SCK speed option. GND  -> slow (8khz SCK),
                         open -> fast (375kHz SCK)
@@ -33,6 +29,7 @@
 #define USBASP_FUNC_WRITEFLASH  6
 #define USBASP_FUNC_READEEPROM  7
 #define USBASP_FUNC_WRITEEEPROM 8
+#define USBASP_FUNC_SETLONGADDRESS 9
 
 #define PROG_STATE_IDLE         0
 #define PROG_STATE_WRITEFLASH   1
@@ -52,9 +49,10 @@ static uchar replyBuffer[8];
 
 static uchar prog_state = PROG_STATE_IDLE;
 
-static unsigned int prog_address;
+static uchar prog_address_newmode = 0;
+static unsigned long prog_address;
 static unsigned int prog_nbytes = 0;
-static unsigned int prog_pagesize; //TP: Mega128 fix
+static unsigned int prog_pagesize;
 static uchar prog_blockflags;
 static uchar prog_pagecounter;
 
@@ -72,6 +70,9 @@ uchar usbFunctionSetup(uchar data[8]) {
       ispSetSCKOption(ISP_SCK_FAST);
     }
 
+    /* set compatibility mode of address delivering */
+    prog_address_newmode = 0;
+
     ispConnect();
     ledRedOn();
 
@@ -87,13 +88,19 @@ uchar usbFunctionSetup(uchar data[8]) {
     len = 4;
 
   } else if (data[1] == USBASP_FUNC_READFLASH) {
-    prog_address = (data[3] << 8) | data[2];
+    
+    if (!prog_address_newmode)
+      prog_address = (data[3] << 8) | data[2];
+    
     prog_nbytes = (data[7] << 8) | data[6];
     prog_state = PROG_STATE_READFLASH;
     len = 0xff; /* multiple in */
 
   } else if (data[1] == USBASP_FUNC_READEEPROM) {
-    prog_address = (data[3] << 8) | data[2];
+    
+    if (!prog_address_newmode)
+       prog_address = (data[3] << 8) | data[2];
+
     prog_nbytes = (data[7] << 8) | data[6];
     prog_state = PROG_STATE_READEEPROM;
     len = 0xff; /* multiple in */
@@ -103,10 +110,13 @@ uchar usbFunctionSetup(uchar data[8]) {
     len = 1;
 
   } else if (data[1] == USBASP_FUNC_WRITEFLASH) {
-    prog_address = (data[3] << 8) | data[2];
+
+    if (!prog_address_newmode)
+      prog_address = (data[3] << 8) | data[2];
+
     prog_pagesize = data[4];
     prog_blockflags = data[5] & 0x0F;
-    prog_pagesize += (((unsigned int)data[5] & 0xF0)<<4); //TP: Mega128 fix
+    prog_pagesize += (((unsigned int)data[5] & 0xF0)<<4);
     if (prog_blockflags & PROG_BLOCKFLAG_FIRST) {
       prog_pagecounter = prog_pagesize;
     }
@@ -115,12 +125,22 @@ uchar usbFunctionSetup(uchar data[8]) {
     len = 0xff; /* multiple out */
 
   } else if (data[1] == USBASP_FUNC_WRITEEEPROM) {
-    prog_address = (data[3] << 8) | data[2];
+
+    if (!prog_address_newmode)
+      prog_address = (data[3] << 8) | data[2];
+
     prog_pagesize = 0;
     prog_blockflags = 0;
     prog_nbytes = (data[7] << 8) | data[6];
     prog_state = PROG_STATE_WRITEEEPROM;
     len = 0xff; /* multiple out */
+
+  } else if(data[1] == USBASP_FUNC_SETLONGADDRESS) {
+
+    /* set new mode of address delivering (ignore address delivered in commands) */
+    prog_address_newmode = 1;
+    /* set new address */
+    prog_address = *((unsigned long*)&data[2]);
   }
 
   usbMsgPtr = replyBuffer;

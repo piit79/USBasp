@@ -4,8 +4,8 @@
  * Creation Date: 2004-12-29
  * Tabsize: 4
  * Copyright: (c) 2005 by OBJECTIVE DEVELOPMENT Software GmbH
- * License: Proprietary, free under certain conditions. See Documentation.
- * This Revision: $Id: usbdrv.c 222 2006-07-17 15:07:34Z cs $
+ * License: GNU GPL v2 (see License.txt) or proprietary (CommercialLicense.txt)
+ * This Revision: $Id: usbdrv.c 350 2007-06-13 11:43:16Z cs $
  */
 
 #include "iarcompat.h"
@@ -33,14 +33,12 @@ documentation of the entire driver.
 /* ------------------------------------------------------------------------- */
 
 /* raw USB registers / interface to assembler code: */
-/* usbRxBuf MUST be in 1 byte addressable range (because usbInputBuf is only 1 byte) */
-__no_init uchar usbRxBuf[2][USB_BUFSIZE] __attribute__ ((section (USB_BUFFER_SECTION))) IAR_SECTION(USB_BUFFER_SECTION);/* raw RX buffer: PID, 8 bytes data, 2 bytes CRC */
+uchar usbRxBuf[2*USB_BUFSIZE];  /* raw RX buffer: PID, 8 bytes data, 2 bytes CRC */
+uchar       usbInputBufOffset;  /* offset in usbRxBuf used for low level receiving */
 uchar       usbDeviceAddr;      /* assigned during enumeration, defaults to 0 */
 uchar       usbNewDeviceAddr;   /* device ID which should be set after status phase */
 uchar       usbConfiguration;   /* currently selected configuration. Administered by driver, but not used */
-uchar       usbInputBuf;        /* ptr to raw buffer used for receiving */
-uchar       usbAppBuf;          /* ptr to raw buffer passed to app for processing */
-volatile schar usbRxLen;        /* = 0; number of bytes in usbAppBuf; 0 means free */
+volatile schar usbRxLen;        /* = 0; number of bytes in usbRxBuf; 0 means free, -1 for flow control */
 uchar       usbCurrentTok;      /* last token received, if more than 1 rx endpoint: MSb=endpoint */
 uchar       usbRxToken;         /* token for data we received; if more than 1 rx endpoint: MSb=endpoint */
 uchar       usbMsgLen = 0xff;   /* remaining number of bytes, no msg to send if -1 (see usbMsgPtr) */
@@ -58,7 +56,6 @@ uchar       usbTxBuf3[USB_BUFSIZE];     /* TX data for endpoint 1 */
 /* USB status registers / not shared with asm code */
 uchar           *usbMsgPtr;     /* data to transmit next -- ROM or RAM address */
 static uchar    usbMsgFlags;    /* flag values see below */
-static uchar    usbIsReset;     /* = 0; USB bus is in reset phase */
 
 #define USB_FLG_TX_PACKET       (1<<0)
 /* Leave free 6 bits after TX_PACKET. This way we can increment usbMsgFlags to toggle TX_PACKET */
@@ -96,9 +93,9 @@ PROGMEM int  usbDescriptorStringVendor[] = {
 };
 #endif
 
-#if USB_CFG_DESCR_PROPS_STRING_DEVICE == 0 && USB_CFG_DEVICE_NAME_LEN
-#undef USB_CFG_DESCR_PROPS_STRING_DEVICE
-#define USB_CFG_DESCR_PROPS_STRING_DEVICE   sizeof(usbDescriptorStringDevice)
+#if USB_CFG_DESCR_PROPS_STRING_PRODUCT == 0 && USB_CFG_DEVICE_NAME_LEN
+#undef USB_CFG_DESCR_PROPS_STRING_PRODUCT
+#define USB_CFG_DESCR_PROPS_STRING_PRODUCT   sizeof(usbDescriptorStringDevice)
 PROGMEM int  usbDescriptorStringDevice[] = {
     USB_STRING_DESCRIPTOR_HEADER(USB_CFG_DEVICE_NAME_LEN),
     USB_CFG_DEVICE_NAME
@@ -122,7 +119,7 @@ PROGMEM int usbDescriptorStringSerialNumber[] = {
 PROGMEM char usbDescriptorDevice[] = {    /* USB device descriptor */
     18,         /* sizeof(usbDescriptorDevice): length of descriptor in bytes */
     USBDESCR_DEVICE,        /* descriptor type */
-    0x01, 0x01,             /* USB version supported */
+    0x10, 0x01,             /* USB version supported */
     USB_CFG_DEVICE_CLASS,
     USB_CFG_DEVICE_SUBCLASS,
     0,                      /* protocol */
@@ -131,7 +128,7 @@ PROGMEM char usbDescriptorDevice[] = {    /* USB device descriptor */
     USB_CFG_DEVICE_ID,      /* 2 bytes */
     USB_CFG_DEVICE_VERSION, /* 2 bytes */
     USB_CFG_DESCR_PROPS_STRING_VENDOR != 0 ? 1 : 0,         /* manufacturer string index */
-    USB_CFG_DESCR_PROPS_STRING_DEVICE != 0 ? 2 : 0,         /* product string index */
+    USB_CFG_DESCR_PROPS_STRING_PRODUCT != 0 ? 2 : 0,        /* product string index */
     USB_CFG_DESCR_PROPS_STRING_SERIAL_NUMBER != 0 ? 3 : 0,  /* serial number string index */
     1,          /* number of configurations */
 };
@@ -209,9 +206,7 @@ typedef union{
 /* ------------------------------------------------------------------------- */
 
 #if USB_CFG_HAVE_INTRIN_ENDPOINT
-uchar   usbTxPacketCnt1;
-
-void    usbSetInterrupt(uchar *data, uchar len)
+USB_PUBLIC void usbSetInterrupt(uchar *data, uchar len)
 {
 uchar       *p, i;
 
@@ -223,16 +218,12 @@ uchar       *p, i;
     if(len > 8) /* interrupt transfers are limited to 8 bytes */
         len = 8;
 #endif
-    i = USBPID_DATA1;
-    if(usbTxPacketCnt1 & 1)
-        i = USBPID_DATA0;
-    if(usbTxLen1 & 0x10){       /* packet buffer was empty */
-        usbTxPacketCnt1++;
+    if(usbTxLen1 & 0x10){   /* packet buffer was empty */
+        usbTxBuf1[0] ^= USBPID_DATA0 ^ USBPID_DATA1;    /* toggle token */
     }else{
-        usbTxLen1 = USBPID_NAK; /* avoid sending incomplete interrupt data */
+        usbTxLen1 = USBPID_NAK; /* avoid sending outdated (overwritten) interrupt data */
     }
-    p = usbTxBuf1;
-    *p++ = i;
+    p = usbTxBuf1 + 1;
     for(i=len;i--;)
         *p++ = *data++;
     usbCrc16Append(&usbTxBuf1[1], len);
@@ -242,22 +233,16 @@ uchar       *p, i;
 #endif
 
 #if USB_CFG_HAVE_INTRIN_ENDPOINT3
-uchar   usbTxPacketCnt3;
-
-void    usbSetInterrupt3(uchar *data, uchar len)
+USB_PUBLIC void usbSetInterrupt3(uchar *data, uchar len)
 {
 uchar       *p, i;
 
-    i = USBPID_DATA1;
-    if(usbTxPacketCnt3 & 1)
-        i = USBPID_DATA0;
-    if(usbTxLen3 & 0x10){       /* packet buffer was empty */
-        usbTxPacketCnt3++;
+    if(usbTxLen3 & 0x10){   /* packet buffer was empty */
+        usbTxBuf3[0] ^= USBPID_DATA0 ^ USBPID_DATA1;    /* toggle token */
     }else{
-        usbTxLen3 = USBPID_NAK; /* avoid sending incomplete interrupt data */
+        usbTxLen3 = USBPID_NAK; /* avoid sending outdated (overwritten) interrupt data */
     }
-    p = usbTxBuf3;
-    *p++ = i;
+    p = usbTxBuf3 + 1;
     for(i=len;i--;)
         *p++ = *data++;
     usbCrc16Append(&usbTxBuf3[1], len);
@@ -267,7 +252,7 @@ uchar       *p, i;
 #endif
 
 
-static uchar    usbRead(uchar *data, uchar len)
+static uchar usbRead(uchar *data, uchar len)
 {
 #if USB_CFG_IMPLEMENT_FN_READ
     if(usbMsgFlags & USB_FLG_USE_DEFAULT_RW){
@@ -325,16 +310,20 @@ uchar           replyLen = 0, flags = USB_FLG_USE_DEFAULT_RW;
 /* We use if() cascades because the compare is done byte-wise while switch()
  * is int-based. The if() cascades are therefore more efficient.
  */
-    DBG2(0x10 + ((usbRxToken >> 6) & 3), data, len);
+/* usbRxToken can be:
+ * 0x2d 00101101 (USBPID_SETUP for endpoint 0)
+ * 0xe1 11100001 (USBPID_OUT for endpoint 0)
+ * 0xff 11111111 (USBPID_OUT for endpoint 1)
+ */
+    DBG2(0x10 + ((usbRxToken >> 1) & 3), data, len);    /* SETUP0=12; OUT0=10; OUT1=13 */
 #if USB_CFG_IMPLEMENT_FN_WRITEOUT
-    if(usbRxToken & 0x80){
+    if(usbRxToken == 0xff){
         usbFunctionWriteOut(data, len);
         return; /* no reply expected, hence no usbMsgPtr, usbMsgFlags, usbMsgLen set */
     }
-    if(usbRxToken == (uchar)(USBPID_SETUP & 0x7f)){ /* MSb contains endpoint (== 0) */
-#else
-    if(usbRxToken == (uchar)USBPID_SETUP){
 #endif
+    if(usbRxToken == (uchar)USBPID_SETUP){
+        usbTxLen = USBPID_NAK;  /* abort pending transmit */
         if(len == 8){   /* Setup size must be always 8 bytes. Ignore otherwise. */
             uchar type = rq->bmRequestType & USBRQ_TYPE_MASK;
             if(type == USBRQ_TYPE_STANDARD){
@@ -374,7 +363,7 @@ uchar           replyLen = 0, flags = USB_FLG_USE_DEFAULT_RW;
                         }else if(rq->wValue.bytes[0] == 1){
                             GET_DESCRIPTOR(USB_CFG_DESCR_PROPS_STRING_VENDOR, usbDescriptorStringVendor)
                         }else if(rq->wValue.bytes[0] == 2){
-                            GET_DESCRIPTOR(USB_CFG_DESCR_PROPS_STRING_DEVICE, usbDescriptorStringDevice)
+                            GET_DESCRIPTOR(USB_CFG_DESCR_PROPS_STRING_PRODUCT, usbDescriptorStringDevice)
                         }else if(rq->wValue.bytes[0] == 3){
                             GET_DESCRIPTOR(USB_CFG_DESCR_PROPS_STRING_SERIAL_NUMBER, usbDescriptorStringSerialNumber)
                         }else if(USB_CFG_DESCR_PROPS_UNKNOWN & USB_PROP_IS_DYNAMIC){
@@ -400,18 +389,18 @@ uchar           replyLen = 0, flags = USB_FLG_USE_DEFAULT_RW;
                     SET_REPLY_LEN(1);
 #if USB_CFG_HAVE_INTRIN_ENDPOINT
                 }else if(rq->bRequest == USBRQ_SET_INTERFACE){      /* 11 */
-                    usbTxPacketCnt1 = 0;        /* reset data toggling for interrupt endpoint */
+                    USB_SET_DATATOKEN1(USBPID_DATA0);   /* reset data toggling for interrupt endpoint */
 #   if USB_CFG_HAVE_INTRIN_ENDPOINT3
-                    usbTxPacketCnt3 = 0;        /* reset data toggling for interrupt endpoint */
+                    USB_SET_DATATOKEN3(USBPID_DATA0);   /* reset data toggling for interrupt endpoint */
 #   endif
 #   if USB_CFG_IMPLEMENT_HALT
                     usbTxLen1 = USBPID_NAK;
                 }else if(rq->bRequest == USBRQ_CLEAR_FEATURE || rq->bRequest == USBRQ_SET_FEATURE){   /* 1|3 */
                     if(rq->wValue.bytes[0] == 0 && rq->wIndex.bytes[0] == 0x81){   /* feature 0 == HALT for endpoint == 1 */
                         usbTxLen1 = rq->bRequest == USBRQ_CLEAR_FEATURE ? USBPID_NAK : USBPID_STALL;
-                        usbTxPacketCnt1 = 0;    /* reset data toggling for interrupt endpoint */
+                        USB_SET_DATATOKEN1(USBPID_DATA0);   /* reset data toggling for interrupt endpoint */
 #       if USB_CFG_HAVE_INTRIN_ENDPOINT3
-                        usbTxPacketCnt3 = 0;    /* reset data toggling for interrupt endpoint */
+                        USB_SET_DATATOKEN3(USBPID_DATA0);   /* reset data toggling for interrupt endpoint */
 #       endif
                     }
 #   endif
@@ -460,7 +449,7 @@ uchar           replyLen = 0, flags = USB_FLG_USE_DEFAULT_RW;
 
 static void usbBuildTxBlock(void)
 {
-uchar       wantLen, len, txLen, token;
+uchar   wantLen, len, txLen, token;
 
     wantLen = usbMsgLen;
     if(wantLen > 8)
@@ -499,67 +488,52 @@ uchar   rval;
 
 /* ------------------------------------------------------------------------- */
 
-void    usbPoll(void)
+USB_PUBLIC void usbPoll(void)
 {
-uchar   len;
+schar   len;
+uchar   i;
 
     if((len = usbRxLen) > 0){
 /* We could check CRC16 here -- but ACK has already been sent anyway. If you
  * need data integrity checks with this driver, check the CRC in your app
  * code and report errors back to the host. Since the ACK was already sent,
  * retries must be handled on application level.
- * unsigned crc = usbCrc16((uchar *)(unsigned)(usbAppBuf + 1), usbRxLen - 3);
+ * unsigned crc = usbCrc16(buffer + 1, usbRxLen - 3);
  */
-        len -= 3;       /* remove PID and CRC */
-        if(len < 128){  /* no overflow */
-            converter_t appBuf;
-            appBuf.ptr = (uchar *)usbRxBuf;
-            appBuf.bytes[0] = usbAppBuf;
-            appBuf.bytes[0]++;
-            usbProcessRx(appBuf.ptr, len);
-        }
+        usbProcessRx(usbRxBuf + USB_BUFSIZE + 1 - usbInputBufOffset, len - 3);
 #if USB_CFG_HAVE_FLOWCONTROL
         if(usbRxLen > 0)    /* only mark as available if not inactivated */
             usbRxLen = 0;
 #else
-        usbRxLen = 0;   /* mark rx buffer as available */
+        usbRxLen = 0;       /* mark rx buffer as available */
 #endif
     }
-    if(usbMsgLen != 0xff){  /* transmit data pending? */
-        if(usbTxLen & 0x10) /* transmit system idle */
+    if(usbTxLen & 0x10){ /* transmit system idle */
+        if(usbMsgLen != 0xff){  /* transmit data pending? */
             usbBuildTxBlock();
-    }
-    if(isNotSE0()){ /* SE0 state */
-        usbIsReset = 0;
-    }else{
-        /* check whether SE0 lasts for more than 2.5us (3.75 bit times) */
-        if(!usbIsReset){
-            uchar i;
-            for(i=100;i;i--){
-                if(isNotSE0())
-                    goto notUsbReset;
-            }
-            usbIsReset = 1;
-            usbNewDeviceAddr = 0;
-            usbDeviceAddr = 0;
-#if USB_CFG_IMPLEMENT_HALT
-            usbTxLen1 = USBPID_NAK;
-#if USB_CFG_HAVE_INTRIN_ENDPOINT3
-            usbTxLen3 = USBPID_NAK;
-#endif
-#endif
-            DBG1(0xff, 0, 0);
-notUsbReset:;
         }
+    }
+    for(i = 10; i > 0; i--){
+        if(isNotSE0())
+            break;
+    }
+    if(i == 0){ /* RESET condition, called multiple times during reset */
+        usbNewDeviceAddr = 0;
+        usbDeviceAddr = 0;
+#if USB_CFG_IMPLEMENT_HALT
+        usbTxLen1 = USBPID_NAK;
+#if USB_CFG_HAVE_INTRIN_ENDPOINT3
+        usbTxLen3 = USBPID_NAK;
+#endif
+#endif
+        DBG1(0xff, 0, 0);
     }
 }
 
 /* ------------------------------------------------------------------------- */
 
-void    usbInit(void)
+USB_PUBLIC void usbInit(void)
 {
-    usbInputBuf = (uchar)usbRxBuf[0];
-    usbAppBuf = (uchar)usbRxBuf[1];
 #if USB_INTR_CFG_SET != 0
     USB_INTR_CFG |= USB_INTR_CFG_SET;
 #endif
@@ -567,6 +541,12 @@ void    usbInit(void)
     USB_INTR_CFG &= ~(USB_INTR_CFG_CLR);
 #endif
     USB_INTR_ENABLE |= (1 << USB_INTR_ENABLE_BIT);
+#if USB_CFG_HAVE_INTRIN_ENDPOINT
+    USB_SET_DATATOKEN1(USBPID_DATA0);   /* reset data toggling for interrupt endpoint */
+#   if USB_CFG_HAVE_INTRIN_ENDPOINT3
+    USB_SET_DATATOKEN3(USBPID_DATA0);   /* reset data toggling for interrupt endpoint */
+#   endif
+#endif
 }
 
 /* ------------------------------------------------------------------------- */

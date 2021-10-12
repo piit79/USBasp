@@ -4,8 +4,8 @@
  * Creation Date: 2006-03-01
  * Tabsize: 4
  * Copyright: (c) 2006 by OBJECTIVE DEVELOPMENT Software GmbH
- * License: Proprietary, free under certain conditions. See Documentation.
- * This Revision: $Id: iarcompat.h 174 2006-03-23 10:09:01Z cs $
+ * License: GNU GPL v2 (see License.txt) or proprietary (CommercialLicense.txt)
+ * This Revision: $Id: iarcompat.h 275 2007-03-20 09:58:28Z cs $
  */
 
 /*
